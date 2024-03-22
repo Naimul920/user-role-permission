@@ -14,6 +14,7 @@ class UserController extends Controller
     public $users;
     public $user;
     public $roles;
+    public $data;
 
     public function index(){
         $this->users = User::get();
@@ -35,5 +36,39 @@ class UserController extends Controller
             ]);
         $this->user->syncRoles($request->roles);
         return redirect('/add-user')->with('message','User create successful');
+    }
+    public function edit($id){
+        $this->users = User::get();
+        $this->roles = Role::get();
+        $this->user= User::find($id);
+        $this->userRoles = $this->user->roles->pluck('name','name')->all();
+        return view('admin.user.edit',['users'=>$this->users,'roles'=>$this->roles,'user'=>$this->user,'userRoles'=>$this->userRoles]);
+    }
+    public function update(Request $request, $id){
+        $request->validate([
+            'name'=>'required|string|max:255',
+            'password'=>'max:255',
+            'confirm_password'=>'same:password|max:255',
+            'roles'=>'required',
+        ]);
+        $this->data=[
+            'name'=> $request->name,
+            'email'=> $request->email,
+        ];
+        if (!empty($request->password)){
+            $this->data+=[
+                'password'=>Hash::make($request->password),
+            ];
+        }
+
+        $this->user=User::find($id);
+        $this->user->update($this->data);
+        $this->user->syncRoles($request->roles);
+        return redirect('/add-user')->with('message', 'User update successful');
+    }
+    public function destroy($id){
+        $this->user = User::find($id);
+        $this->user->delete();
+        return redirect('/add-user')->with('message', 'User delete successful');
     }
 }
